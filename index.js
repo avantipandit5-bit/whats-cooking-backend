@@ -92,6 +92,28 @@ app.post('/history', async (req, res) => {
   }
 });
 
+app.post('/usage-event', async (req, res) => {
+  try {
+    const { user_id, is_repeat_visit } = req.body;
+
+    if (!user_id) {
+      return res.status(400).json({ error: 'user_id is required' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO usage_events (user_id, is_repeat_visit)
+       VALUES ($1, $2)
+       RETURNING *`,
+      [user_id, is_repeat_visit]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong logging usage event' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
