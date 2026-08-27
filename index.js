@@ -138,6 +138,58 @@ app.post('/funnel-event', async (req, res) => {
   }
 });
 
+app.post('/generate-recipe', async (req, res) => {
+  try {
+    const { mood, category, ingredients } = req.body;
+
+    if (!mood || !category || !ingredients) {
+      return res.status(400).json({ error: 'mood, category, and ingredients are required' });
+    }
+
+    const ingredientList = Object.entries(ingredients)
+      .filter(([key, value]) => Array.isArray(value) && value.length > 0)
+      .map(([key, value]) => `${key}: ${value.join(', ')}`)
+      .join('\n');
+
+    const prompt = `You are a helpful home cooking assistant. Create ONE recipe using ONLY the ingredients listed below (plus common staples like water, oil, and heat). Do not require any ingredient not listed.
+
+Mood: ${mood}
+Category: ${category}
+Available ingredients:
+${ingredientList}
+
+Respond with ONLY valid JSON, no other text, in this exact shape:
+{
+  "name": "Recipe name",
+  "description": "One sentence description",
+  "ingredients_used": ["ingredient with amount", "ingredient with amount"],
+  "instructions": ["Step 1 text", "Step 2 text", "Step 3 text"],
+  "possible_swaps": "Optional swap suggestions, or empty string if none"
+}`;
+
+    const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-oss-120b',
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const groqData = await groqResponse.json();
+    const rawText = groqData.choices[0].message.content;
+    const recipe = JSON.parse(rawText);
+
+    res.json(recipe);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong generating a recipe' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
