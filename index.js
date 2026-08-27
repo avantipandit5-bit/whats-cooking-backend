@@ -116,6 +116,28 @@ app.post('/usage-event', async (req, res) => {
   }
 });
 
+app.post('/funnel-event', async (req, res) => {
+  try {
+    const { user_id, session_id, step, value } = req.body;
+
+    if (!user_id || !session_id || !step) {
+      return res.status(400).json({ error: 'user_id, session_id, and step are required' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO funnel_events (user_id, session_id, step, value)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [user_id, session_id, step, value]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong logging funnel event' });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
