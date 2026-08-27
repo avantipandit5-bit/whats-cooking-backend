@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/avantipandit5-bit/whats-cooking-backend#readme",
   "dependencies": {
+    "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "pg": "^8.23.0"
