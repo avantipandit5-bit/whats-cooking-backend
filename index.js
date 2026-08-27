@@ -29,6 +29,28 @@ app.get('/recipes', async (req, res) => {
   }
 });
 
+app.post('/recipes', async (req, res) => {
+  try {
+    const { name, description, meal_type, mood, instructions_or_link, possible_swaps } = req.body;
+
+    if (!name || !meal_type) {
+      return res.status(400).json({ error: 'name and meal_type are required' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO recipes (name, description, meal_type, mood, instructions_or_link, possible_swaps)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       RETURNING *`,
+      [name, description, meal_type, mood, instructions_or_link, possible_swaps]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong saving the recipe' });
+  }
+});
+
 app.get('/recommendation', async (req, res) => {
   try {
     const { meal_type, mood, time_required, protein, carb_base } = req.query;
