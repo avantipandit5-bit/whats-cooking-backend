@@ -4,6 +4,7 @@ const express = require('express');
 const { Pool } = require('pg');
 
 const app = express();
+app.use(express.json());
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -66,6 +67,28 @@ app.get('/recommendation', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Something went wrong getting a recommendation' });
+  }
+});
+
+app.post('/history', async (req, res) => {
+  try {
+    const { user_id, recipe_id, would_make_again, adjustments } = req.body;
+
+    if (!user_id || !recipe_id) {
+      return res.status(400).json({ error: 'user_id and recipe_id are required' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO user_history (user_id, recipe_id, would_make_again, adjustments)
+       VALUES ($1, $2, $3, $4)
+       RETURNING *`,
+      [user_id, recipe_id, would_make_again, adjustments]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Something went wrong saving history' });
   }
 });
 
